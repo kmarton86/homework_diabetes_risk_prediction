@@ -9,6 +9,7 @@ from analysis import dataset_summary, class_distribution
 # LOAD DATA
 # -----------------------
 X, y = load_data()
+# TODO - store in DB 
 
 # -----------------------
 # LABELS

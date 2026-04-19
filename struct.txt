@@ -1,0 +1,147 @@
+ml_diabetes:
+	- analysis.py
+	- dataset.py
+	- main.py
+	- model.py
+	- prediction.py
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+# analysis.py
+
+def dataset_summary(X, y):
+    return {
+        "shape": X.shape,
+        "feature_means": X.mean().to_dict(),
+        "feature_std": X.std().to_dict(),
+        "target_mean": float(y.mean()),
+        "target_min": float(y.min()),
+        "target_max": float(y.max())
+    }
+
+
+def class_distribution(y, threshold):
+    labels = (y > threshold).astype(int)
+
+    return {
+        "not_endangered": int((labels == 0).sum()),
+        "endangered": int((labels == 1).sum())
+    }
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+# dataset.py
+from sklearn.datasets import load_diabetes
+
+def load_data():
+    X, y = load_diabetes(return_X_y=True, as_frame=True)
+    return X, y
+	
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+# main.py
+import pandas as pd
+
+from dataset import load_data
+from model import create_labels, train_model
+from prediction import predict_patient
+from analysis import dataset_summary, class_distribution
+
+# -----------------------
+# LOAD DATA
+# -----------------------
+X, y = load_data()
+# TODO - store in DB 
+
+# -----------------------
+# LABELS
+# -----------------------
+y_150 = create_labels(y, 150)
+y_250 = create_labels(y, 250)
+
+# -----------------------
+# TRAIN MODELS
+# -----------------------
+model_150, scaler_150 = train_model(X, y_150)
+model_250, scaler_250 = train_model(X, y_250)
+
+# -----------------------
+# ANALYSIS
+# -----------------------
+print("\nDATASET SUMMARY:")
+print(dataset_summary(X, y))
+
+print("\nCLASS DISTRIBUTION (150):")
+print(class_distribution(y, 150))
+
+print("\nCLASS DISTRIBUTION (250):")
+print(class_distribution(y, 250))
+
+# -----------------------
+# NEW PATIENT
+# -----------------------
+new_patient = {
+    "age": 50,
+    "sex": 1,
+    "bmi": 28,
+    "bp": 120,
+    "s1": 85,
+    "s2": 180,
+    "s3": 40,
+    "s4": 5,
+    "s5": 4.5,
+    "s6": 90
+}
+
+# -----------------------
+# PREPROCESS
+# -----------------------
+patient_df = pd.DataFrame([new_patient])
+
+# -----------------------
+# PREDICTION
+# -----------------------
+print("\nPREDICTION 150:")
+print(predict_patient(patient_df, model_150, scaler_150))
+
+print("\nPREDICTION 250:")
+print(predict_patient(patient_df, model_250, scaler_250))
+
+-----------
+# model.py -> training + scaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+
+def create_labels(y, threshold):
+    return (y > threshold).astype(int)
+
+
+def train_model(X, y):
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X_train_scaled, y_train)
+
+    return model, scaler
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+# prediction.py
+
+def predict_patient(patient_df, model, scaler):
+    """
+    patient_df: DataFrame (preprocessed)
+    """
+
+    X_scaled = scaler.transform(patient_df)
+
+    pred = model.predict(X_scaled)[0]
+
+    return "Endangered" if pred == 1 else "Not Endangered"
