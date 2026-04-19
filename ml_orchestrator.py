@@ -40,7 +40,7 @@ print(class_distribution(y, 250))
 # -----------------------
 new_patient = {
     "age": 50,
-    "sex": 1,
+    "sex": 0,
     "bmi": 28,
     "bp": 120,
     "s1": 85,

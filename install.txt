@@ -4,4 +4,4 @@ ML:
 pip install scikit-learn pandas
 
 Full Stack:
-pip install fastapi uvicorn scikit-learn pandas sqlalchemy
+pip install flask scikit-learn pandas sqlalchemy
