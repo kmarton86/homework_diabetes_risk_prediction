@@ -1,9 +1,9 @@
 import pandas as pd
 
-from dataset import load_data
-from model import create_labels, train_model
-from prediction import predict_patient
-from analysis import dataset_summary, class_distribution
+from ml.dataset import load_data
+from ml.model import create_labels, train_model
+from ml.prediction import predict_patient
+from ml.analysis import dataset_summary, class_distribution
 
 # -----------------------
 # LOAD DATA
