@@ -1,0 +1,88 @@
+body {
+    background-color: #001f3f;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.container {
+    margin-top: 30px;
+}
+
+.menu {
+    margin-bottom: 20px;
+}
+
+.menu button {
+    margin: 5px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.menu button:hover {
+    background: #00509e;
+    color: white;
+}
+
+.card {
+    background: #003366;
+    display: inline-block;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: left;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 15px;
+    width: 520px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-size: 13px;
+    margin-bottom: 3px;
+}
+
+input, select {
+    font-size: 13px;
+    padding: 5px;
+    border: none;
+    border-radius: 4px;
+}
+
+.full-width {
+    grid-column: span 2;
+}
+
+button.submit {
+    margin-top: 10px;
+    padding: 8px;
+    width: 100%;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#result {
+    margin-top: 15px;
+    background: #003366;
+    display: inline-block;
+    padding: 10px 15px;
+    border-radius: 6px;
+}
+
+.section {
+    display: none;
+}
+
+.active {
+    display: block;
+}
