@@ -1,7 +1,21 @@
 from flask import Flask, render_template, request, jsonify
 from sklearn.datasets import load_diabetes
 
+
 app = Flask(__name__)
+
+# =========================
+#  App config
+# =========================
+
+# Database
+DB_PATH = "diabetes.db"
+
+# Model target tresholds
+THRESHOLD_1 = 150
+THRESHOLD_2 = 250
+
+CURRENT_THRESHOLD = THRESHOLD_2
 
 
 # =========================
@@ -9,7 +23,10 @@ app = Flask(__name__)
 # =========================
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template(
+        'index.html',
+        current_threshold=CURRENT_THRESHOLD
+    )
 
 
 # =========================
@@ -52,6 +69,7 @@ def visualization_data():
 # =========================
 @app.route('/api/predict', methods=['POST'])
 def predict():
+
     data = request.get_json()
 
     if not data:
@@ -90,7 +108,6 @@ def predict():
 
 
 # =========================
-# RUN APP
 # =========================
 if __name__ == '__main__':
     app.run(debug=True)

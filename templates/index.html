@@ -16,6 +16,7 @@
         <button onclick="showSection('dataset')">Dataset summary</button>
         <button onclick="showSection('viz')">Visualizations</button>
         <button onclick="showSection('predict')">Prediction</button>
+        <!-- <button onclick="showSection('config')">Configuration</button> -->
     </div>
 
     <!-- ================= DATASET ================= -->
@@ -102,15 +103,27 @@
                 </div>
 
             </form>
-
+            <!-- threshold value -->
+            <p>Threshold set to: <strong>{{ current_threshold }}</strong></p>
+            <!-- result -->
             <h3 id="result"></h3>
+            
 
         </div>
     </div>
 
+    <!-- ================= Configuration - threshold ================= -->
+    <!-- <div id="config" class="section">
+        <div class="card">
+            <h3>Configuration</h3>
+            <p>Set the current threshold for ML.</p>
+        </div>
+    </div> -->
+
 </div>
 
 <script>
+    // sections
     function showSection(id) {
         document.querySelectorAll('.section').forEach(sec => {
             sec.classList.remove('active');
