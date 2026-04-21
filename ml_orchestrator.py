@@ -1,6 +1,6 @@
 import pandas as pd
 
-from db import load_from_db
+from db import load_from_db, init_db
 from ml.model import create_labels, train_model
 from ml.prediction import predict_patient
 from ml.analysis import dataset_summary, class_distribution
@@ -30,6 +30,7 @@ def get_X_y_from_dataset():
 MODELS = None
 
 def train_all_models():
+    # get X,y from db to train models
     X, y = get_X_y_from_dataset()
 
     # create_labels, train_model from ml.model
@@ -44,14 +45,21 @@ def train_all_models():
         250: (model_250, scaler_250)
     }
 
-# train all models - call it once 
+# train all models - call it once from app.py
 def init_models():
+    # load dataset and init db
+    try:
+        init_db(DB_PATH)
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
     global MODELS
     MODELS = train_all_models()
 
 # -----------------------
 # ML ANALYSIS
 # -----------------------
+
 # DATASET SUMMARY
 def get_dataset_summary():
     X, y = get_X_y_from_dataset()
@@ -76,8 +84,13 @@ def run_prediction(patient_df, threshold):
     model, scaler = MODELS[threshold]
     return predict_patient(patient_df, model, scaler)
 
+
+
+# -----------------------
+# TESTING
+# -----------------------
 if __name__ == "__main__":
-    
+
     init_models()  
 
     print("\nDATASET SUMMARY:")
