@@ -37,12 +37,20 @@ def train_all_models():
     y_150 = create_labels(y, 150)
     y_250 = create_labels(y, 250)
 
-    model_150, scaler_150 = train_model(X, y_150)
-    model_250, scaler_250 = train_model(X, y_250)
+    model_150, scaler_150, metrics_150  = train_model(X, y_150)
+    model_250, scaler_250, metrics_250 = train_model(X, y_250)
 
     return {
-        150: (model_150, scaler_150),
-        250: (model_250, scaler_250)
+        150: {
+            "model": model_150,
+            "scaler": scaler_150,
+            "metrics": metrics_150
+        },
+        250: {
+            "model": model_250,
+            "scaler": scaler_250,
+            "metrics": metrics_250
+        }
     }
 
 # train all models - call it once from app.py
@@ -71,20 +79,45 @@ def get_class_distribution(threshold):
     _, y = get_X_y_from_dataset()
     return class_distribution(y, threshold)
 
+
+# -----------------------
+# MODEL PERFORMANCE (NEW - VIZ FRIENDLY)
+# -----------------------
+def get_model_performance():
+    global MODELS
+
+    if MODELS is None:
+        init_models()
+
+    return {
+        "150": MODELS[150]["metrics"],
+        "250": MODELS[250]["metrics"]
+    }
+
+# -----------------------
+# VISUALIZATION BUNDLE (NEW)
+# -----------------------
+def get_visualization_data():
+    return {
+        "dataset_summary": get_dataset_summary(),
+        "class_distribution_150": get_class_distribution(150),
+        "class_distribution_250": get_class_distribution(250),
+        "model_performance": get_model_performance()
+    }
+
 # -----------------------
 # PREDICTION
 # -----------------------
 def run_prediction(patient_df, threshold):
     global MODELS
 
-    # safety check
     if MODELS is None:
         init_models()
 
-    model, scaler = MODELS[threshold]
+    model = MODELS[threshold]["model"]
+    scaler = MODELS[threshold]["scaler"]
+
     return predict_patient(patient_df, model, scaler)
-
-
 
 # -----------------------
 # TESTING
@@ -101,6 +134,9 @@ if __name__ == "__main__":
 
     print("\nCLASS DISTRIBUTION (250):")
     print(get_class_distribution(THRESHOLD_250))
+
+    print("\nMODEL PERFORMANCE:")
+    print(get_model_performance())
 
     new_patient = {
         "age": 50,
@@ -119,3 +155,21 @@ if __name__ == "__main__":
 
     print(f"\nPREDICTION (threshold = {CURRENT_THRESHOLD}):")
     print(run_prediction(patient_df, CURRENT_THRESHOLD))
+
+    # -----------------------
+    # GET VISUALIZATION BUNDLE
+    # -----------------------
+    viz_data = get_visualization_data()
+
+    # -----------------------
+    # PRINT RAW
+    # -----------------------
+    print("\nRAW VISUALIZATION DATA:\n")
+    print(viz_data)
+
+    # -----------------------
+    # PRETTY JSON (frontend-ready check)
+    # -----------------------
+    import json
+    print("\nPRETTY JSON:\n")
+    print(json.dumps(viz_data, indent=4))

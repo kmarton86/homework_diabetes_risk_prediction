@@ -1,7 +1,7 @@
-# model.py -> training + scaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 
 def create_labels(y, threshold):
@@ -15,8 +15,20 @@ def train_model(X, y):
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
     model = LogisticRegression(max_iter=1000)
     model.fit(X_train_scaled, y_train)
 
-    return model, scaler
+    # -----------------------
+    # EVALUATION
+    # -----------------------
+    y_pred = model.predict(X_test_scaled)
+
+    acc = accuracy_score(y_test, y_pred)
+    cm = confusion_matrix(y_test, y_pred)
+
+    return model, scaler, {
+        "accuracy": float(acc),
+        "confusion_matrix": cm.tolist()
+    }
