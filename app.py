@@ -12,11 +12,11 @@ app = Flask(__name__)
 # Database
 DB_PATH = "diabetes.db"
 
-# Model target tresholds
-THRESHOLD_1 = 150
-THRESHOLD_2 = 250
+# Model target thresholds
+THRESHOLD_150 = 150
+THRESHOLD_250 = 250
 
-CURRENT_THRESHOLD = THRESHOLD_2
+CURRENT_THRESHOLD = THRESHOLD_150
 
 
 # -----------------------

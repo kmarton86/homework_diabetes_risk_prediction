@@ -1,0 +1,1484 @@
+=== PROJECT STRUCTURE ===
+
+[D:\Projects\homework_diabetes_risk_prediction]
+  - app.py
+  - db.py
+  - diabetes.db
+  - install.txt
+  - ml_orchestrator.py
+  - project_summary.txt
+  - requirements.txt
+
+
+=== FILE CONTENTS ===
+
+[D:\Projects\homework_diabetes_risk_prediction]
+  - app.py:
+    from flask import Flask, render_template, request, jsonify
+    from sklearn.datasets import load_diabetes
+    
+    from db import init_db
+    
+    app = Flask(__name__)
+    
+    # =========================
+    #  App config
+    # =========================
+    
+    # Database
+    DB_PATH = "diabetes.db"
+    
+    # Model target tresholds
+    THRESHOLD_1 = 150
+    THRESHOLD_2 = 250
+    
+    CURRENT_THRESHOLD = THRESHOLD_2
+    
+    
+    # =========================
+    # FRONTEND ENTRY
+    # =========================
+    @app.route('/')
+    def index():
+        return render_template(
+            'index.html',
+            current_threshold=CURRENT_THRESHOLD
+        )
+    
+    
+    # =========================
+    # 1. DATASET SUMMARY API
+    # =========================
+    @app.route('/api/dataset', methods=['GET'])
+    def dataset_summary():
+        data = load_diabetes()
+    
+        summary = {
+            "samples": len(data.data),
+            "features": len(data.feature_names),
+            "feature_names": data.feature_names
+        }
+    
+        return jsonify(summary)
+    
+    
+    # =========================
+    # 2. VISUALIZATION DATA API
+    # =========================
+    @app.route('/api/visualization', methods=['GET'])
+    def visualization_data():
+        data = load_diabetes()
+    
+        # skeleton: csak nyers adatot adunk vissza
+        # frontend (Chart.js) fogja rajzolni
+    
+        response = {
+            "bmi": data.data[:, 2].tolist(),
+            "bp": data.data[:, 3].tolist(),
+            "target": data.target.tolist()
+        }
+    
+        return jsonify(response)
+    
+    
+    # =========================
+    # 3. PREDICTION API
+    # =========================
+    @app.route('/api/predict', methods=['POST'])
+    def predict():
+    
+        data = request.get_json()
+    
+        if not data:
+            return jsonify({"error": "No JSON received"}), 400
+    
+        sex_map = {
+            "female": 0,
+            "male": 1
+        }
+    
+        try:
+            patient = {
+                "age": int(data.get("age")),
+                "sex": sex_map.get(data.get("sex")),
+                "bmi": float(data.get("bmi")),
+                "bp": int(data.get("bp")),
+                "s1": int(data.get("s1")),
+                "s2": int(data.get("s2")),
+                "s3": int(data.get("s3")),
+                "s4": int(data.get("s4")),
+                "s5": float(data.get("s5")),
+                "s6": int(data.get("s6"))
+            }
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid input"}), 400
+    
+        print("Received patient:", patient)
+    
+        # skeleton prediction (ML később jön ide)
+        fake_prediction = "Not Endangered"
+    
+        return jsonify({
+            "prediction": fake_prediction,
+            "patient": patient
+        })
+    
+    
+    # =========================
+    # =========================
+    if __name__ == '__main__':
+        # init database at startup
+        init_db(DB_PATH)
+        app.run(debug=True)
+
+  - db.py:
+    import sqlite3
+    from ml.dataset import load_data  # állítsd a pontos path-ra
+    
+    # DB_PATH = "diabetes.db"
+    
+    def init_db(DB_PATH):
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+    
+        # Create table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS diabetes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                age REAL,
+                sex REAL,
+                bmi REAL,
+                bp REAL,
+                s1 REAL,
+                s2 REAL,
+                s3 REAL,
+                s4 REAL,
+                s5 REAL,
+                s6 REAL,
+                target REAL
+            )
+        """)
+    
+        # Check if table is empty
+        cursor.execute("SELECT COUNT(*) FROM diabetes")
+        count = cursor.fetchone()[0]
+    
+        # if empty populate data from dataset
+        if count == 0:
+            print("Loading dataset into DB...")
+    
+            X, y = load_data()
+    
+            # pandas dataframe → numpy / values
+            X_values = X.values
+            y_values = y.values
+    
+            for i in range(len(X_values)):
+                row = list(X_values[i]) + [y_values[i]]
+    
+                cursor.execute("""
+                    INSERT INTO diabetes (
+                        age, sex, bmi, bp,
+                        s1, s2, s3, s4, s5, s6, target
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, row)
+    
+            conn.commit()
+            print("Dataset stored in DB")
+    
+        else:
+            print("DB already initialized")
+    
+        conn.close()
+    
+    if __name__ == "__main__":
+        init_db()
+
+  - install.txt:
+    load-dabetes: https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_diabetes.html#sklearn.datasets.load_diabetes
+    
+    ML:
+    pip install scikit-learn pandas
+    
+    Full Stack:
+    pip install flask scikit-learn pandas sqlalchemy
+
+  - ml_orchestrator.py:
+    import pandas as pd
+    
+    from ml.dataset import load_data
+    from ml.model import create_labels, train_model
+    from ml.prediction import predict_patient
+    from ml.analysis import dataset_summary, class_distribution
+    
+    # -----------------------
+    # LOAD DATA
+    # -----------------------
+    X, y = load_data()
+    # TODO - store in DB 
+    
+    # -----------------------
+    # LABELS
+    # -----------------------
+    y_150 = create_labels(y, 150)
+    y_250 = create_labels(y, 250)
+    
+    # -----------------------
+    # TRAIN MODELS
+    # -----------------------
+    model_150, scaler_150 = train_model(X, y_150)
+    model_250, scaler_250 = train_model(X, y_250)
+    
+    # -----------------------
+    # ANALYSIS
+    # -----------------------
+    print("\nDATASET SUMMARY:")
+    print(dataset_summary(X, y))
+    
+    print("\nCLASS DISTRIBUTION (150):")
+    print(class_distribution(y, 150))
+    
+    print("\nCLASS DISTRIBUTION (250):")
+    print(class_distribution(y, 250))
+    
+    # -----------------------
+    # NEW PATIENT
+    # -----------------------
+    new_patient = {
+        "age": 50,
+        "sex": 0,
+        "bmi": 28,
+        "bp": 120,
+        "s1": 85,
+        "s2": 180,
+        "s3": 40,
+        "s4": 5,
+        "s5": 4.5,
+        "s6": 90
+    }
+    
+    # -----------------------
+    # PREPROCESS
+    # -----------------------
+    patient_df = pd.DataFrame([new_patient])
+    
+    # -----------------------
+    # PREDICTION
+    # -----------------------
+    print("\nPREDICTION 150:")
+    print(predict_patient(patient_df, model_150, scaler_150))
+    
+    print("\nPREDICTION 250:")
+    print(predict_patient(patient_df, model_250, scaler_250))
+
+  - project_summary.txt:
+    === PROJECT STRUCTURE ===
+    
+    [D:\Projects\homework_diabetes_risk_prediction]
+      - app.py
+      - app_wML.py
+      - db.py
+      - diabetes.db
+      - diabetes.txt
+      - install.txt
+      - ml_orchestrator.py
+      - requirements.txt
+      - struct.txt
+    
+    [arcvive]
+      - config.py
+      - diabetes_dataset.py
+      - diabetes_dataset_tutorial.py
+      - process_diabetes_dataset.py
+    
+    [ml]
+      - analysis.py
+      - dataset.py
+      - model.py
+      - prediction.py
+    
+    
+    [static]
+      - style.css
+    
+    [templates]
+      - index.html
+    
+    [utilitites]
+      - list_scripts_and_directories.py
+    
+    
+    
+    === FILE CONTENTS ===
+    
+    [D:\Projects\homework_diabetes_risk_prediction]
+      - app.py:
+        from flask import Flask, render_template, request, jsonify
+        from sklearn.datasets import load_diabetes
+        
+        from db import init_db
+        
+        app = Flask(__name__)
+        
+        # =========================
+        #  App config
+        # =========================
+        
+        # Database
+        DB_PATH = "diabetes.db"
+        
+        # Model target tresholds
+        THRESHOLD_1 = 150
+        THRESHOLD_2 = 250
+        
+        CURRENT_THRESHOLD = THRESHOLD_2
+        
+        
+        # =========================
+        # FRONTEND ENTRY
+        # =========================
+        @app.route('/')
+        def index():
+            return render_template(
+                'index.html',
+                current_threshold=CURRENT_THRESHOLD
+            )
+        
+        
+        # =========================
+        # 1. DATASET SUMMARY API
+        # =========================
+        @app.route('/api/dataset', methods=['GET'])
+        def dataset_summary():
+            data = load_diabetes()
+        
+            summary = {
+                "samples": len(data.data),
+                "features": len(data.feature_names),
+                "feature_names": data.feature_names
+            }
+        
+            return jsonify(summary)
+        
+        
+        # =========================
+        # 2. VISUALIZATION DATA API
+        # =========================
+        @app.route('/api/visualization', methods=['GET'])
+        def visualization_data():
+            data = load_diabetes()
+        
+            # skeleton: csak nyers adatot adunk vissza
+            # frontend (Chart.js) fogja rajzolni
+        
+            response = {
+                "bmi": data.data[:, 2].tolist(),
+                "bp": data.data[:, 3].tolist(),
+                "target": data.target.tolist()
+            }
+        
+            return jsonify(response)
+        
+        
+        # =========================
+        # 3. PREDICTION API
+        # =========================
+        @app.route('/api/predict', methods=['POST'])
+        def predict():
+        
+            data = request.get_json()
+        
+            if not data:
+                return jsonify({"error": "No JSON received"}), 400
+        
+            sex_map = {
+                "female": 0,
+                "male": 1
+            }
+        
+            try:
+                patient = {
+                    "age": int(data.get("age")),
+                    "sex": sex_map.get(data.get("sex")),
+                    "bmi": float(data.get("bmi")),
+                    "bp": int(data.get("bp")),
+                    "s1": int(data.get("s1")),
+                    "s2": int(data.get("s2")),
+                    "s3": int(data.get("s3")),
+                    "s4": int(data.get("s4")),
+                    "s5": float(data.get("s5")),
+                    "s6": int(data.get("s6"))
+                }
+            except (TypeError, ValueError):
+                return jsonify({"error": "Invalid input"}), 400
+        
+            print("Received patient:", patient)
+        
+            # skeleton prediction (ML később jön ide)
+            fake_prediction = "Not Endangered"
+        
+            return jsonify({
+                "prediction": fake_prediction,
+                "patient": patient
+            })
+        
+        
+        # =========================
+        # =========================
+        if __name__ == '__main__':
+            # init database at startup
+            init_db(DB_PATH)
+            app.run(debug=True)
+    
+      - app_wML.py:
+        from flask import Flask, request, jsonify, render_template
+        import pandas as pd
+        
+        from ml.dataset import load_data
+        from ml.model import create_labels, train_model
+        from ml.prediction import predict_patient
+        
+        app = Flask(__name__)
+        
+        # -----------------------
+        # INIT MODEL (startup)
+        # -----------------------
+        X, y = load_data()
+        
+        y_150 = create_labels(y, 150)
+        y_250 = create_labels(y, 250)
+        
+        model_150, scaler_150 = train_model(X, y_150)
+        model_250, scaler_250 = train_model(X, y_250)
+        
+        # -----------------------
+        # ROUTES
+        # -----------------------
+        
+        @app.route("/")
+        def index():
+            return render_template("index.html")
+        
+        
+        @app.route("/predict", methods=["POST"])
+        def predict():
+            data = request.get_json()
+        
+            new_patient = {
+                "age": float(data["age"]),
+                "sex": float(data["sex"]),
+                "bmi": float(data["bmi"]),
+                "bp": float(data["bp"]),
+                "s1": float(data["s1"]),
+                "s2": float(data["s2"]),
+                "s3": float(data["s3"]),
+                "s4": float(data["s4"]),
+                "s5": float(data["s5"]),
+                "s6": float(data["s6"]),
+            }
+        
+            patient_df = pd.DataFrame([new_patient])
+        
+            result_150 = predict_patient(patient_df, model_150, scaler_150)
+            result_250 = predict_patient(patient_df, model_250, scaler_250)
+        
+            return jsonify({
+                "150": result_150,
+                "250": result_250
+            })
+        
+        
+        if __name__ == "__main__":
+            app.run(debug=True)
+    
+      - db.py:
+        import sqlite3
+        from ml.dataset import load_data  # állítsd a pontos path-ra
+        
+        # DB_PATH = "diabetes.db"
+        
+        def init_db(DB_PATH):
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+        
+            # Create table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS diabetes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    age REAL,
+                    sex REAL,
+                    bmi REAL,
+                    bp REAL,
+                    s1 REAL,
+                    s2 REAL,
+                    s3 REAL,
+                    s4 REAL,
+                    s5 REAL,
+                    s6 REAL,
+                    target REAL
+                )
+            """)
+        
+            # Check if table is empty
+            cursor.execute("SELECT COUNT(*) FROM diabetes")
+            count = cursor.fetchone()[0]
+        
+            # if empty populate data from dataset
+            if count == 0:
+                print("Loading dataset into DB...")
+        
+                X, y = load_data()
+        
+                # pandas dataframe → numpy / values
+                X_values = X.values
+                y_values = y.values
+        
+                for i in range(len(X_values)):
+                    row = list(X_values[i]) + [y_values[i]]
+        
+                    cursor.execute("""
+                        INSERT INTO diabetes (
+                            age, sex, bmi, bp,
+                            s1, s2, s3, s4, s5, s6, target
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, row)
+        
+                conn.commit()
+                print("Dataset stored in DB")
+        
+            else:
+                print("DB already initialized")
+        
+            conn.close()
+        
+        if __name__ == "__main__":
+            init_db()
+    
+    
+      - ml_orchestrator.py:
+        import pandas as pd
+        
+        from ml.dataset import load_data
+        from ml.model import create_labels, train_model
+        from ml.prediction import predict_patient
+        from ml.analysis import dataset_summary, class_distribution
+        
+        # -----------------------
+        # LOAD DATA
+        # -----------------------
+        X, y = load_data()
+        # TODO - store in DB 
+        
+        # -----------------------
+        # LABELS
+        # -----------------------
+        y_150 = create_labels(y, 150)
+        y_250 = create_labels(y, 250)
+        
+        # -----------------------
+        # TRAIN MODELS
+        # -----------------------
+        model_150, scaler_150 = train_model(X, y_150)
+        model_250, scaler_250 = train_model(X, y_250)
+        
+        # -----------------------
+        # ANALYSIS
+        # -----------------------
+        print("\nDATASET SUMMARY:")
+        print(dataset_summary(X, y))
+        
+        print("\nCLASS DISTRIBUTION (150):")
+        print(class_distribution(y, 150))
+        
+        print("\nCLASS DISTRIBUTION (250):")
+        print(class_distribution(y, 250))
+        
+        # -----------------------
+        # NEW PATIENT
+        # -----------------------
+        new_patient = {
+            "age": 50,
+            "sex": 0,
+            "bmi": 28,
+            "bp": 120,
+            "s1": 85,
+            "s2": 180,
+            "s3": 40,
+            "s4": 5,
+            "s5": 4.5,
+            "s6": 90
+        }
+        
+        # -----------------------
+        # PREPROCESS
+        # -----------------------
+        patient_df = pd.DataFrame([new_patient])
+        
+        # -----------------------
+        # PREDICTION
+        # -----------------------
+        print("\nPREDICTION 150:")
+        print(predict_patient(patient_df, model_150, scaler_150))
+        
+        print("\nPREDICTION 250:")
+        print(predict_patient(patient_df, model_250, scaler_250))
+    
+      - requirements.txt:
+        flask
+        scikit-learn
+        pandas
+        sqlite3
+    
+      - struct.txt:
+        ml_diabetes:
+        	- analysis.py
+        	- dataset.py
+        	- main.py
+        	- model.py
+        	- prediction.py
+        
+        --------------------------------------------------------------------------------
+        --------------------------------------------------------------------------------
+        # analysis.py
+        
+        def dataset_summary(X, y):
+            return {
+                "shape": X.shape,
+                "feature_means": X.mean().to_dict(),
+                "feature_std": X.std().to_dict(),
+                "target_mean": float(y.mean()),
+                "target_min": float(y.min()),
+                "target_max": float(y.max())
+            }
+        
+        
+        def class_distribution(y, threshold):
+            labels = (y > threshold).astype(int)
+        
+            return {
+                "not_endangered": int((labels == 0).sum()),
+                "endangered": int((labels == 1).sum())
+            }
+        
+        --------------------------------------------------------------------------------
+        --------------------------------------------------------------------------------
+        # dataset.py
+        from sklearn.datasets import load_diabetes
+        
+        def load_data():
+            X, y = load_diabetes(return_X_y=True, as_frame=True)
+            return X, y
+        	
+        --------------------------------------------------------------------------------
+        --------------------------------------------------------------------------------
+        # main.py
+        import pandas as pd
+        
+        from dataset import load_data
+        from model import create_labels, train_model
+        from prediction import predict_patient
+        from analysis import dataset_summary, class_distribution
+        
+        # -----------------------
+        # LOAD DATA
+        # -----------------------
+        X, y = load_data()
+        # TODO - store in DB 
+        
+        # -----------------------
+        # LABELS
+        # -----------------------
+        y_150 = create_labels(y, 150)
+        y_250 = create_labels(y, 250)
+        
+        # -----------------------
+        # TRAIN MODELS
+        # -----------------------
+        model_150, scaler_150 = train_model(X, y_150)
+        model_250, scaler_250 = train_model(X, y_250)
+        
+        # -----------------------
+        # ANALYSIS
+        # -----------------------
+        print("\nDATASET SUMMARY:")
+        print(dataset_summary(X, y))
+        
+        print("\nCLASS DISTRIBUTION (150):")
+        print(class_distribution(y, 150))
+        
+        print("\nCLASS DISTRIBUTION (250):")
+        print(class_distribution(y, 250))
+        
+        # -----------------------
+        # NEW PATIENT
+        # -----------------------
+        new_patient = {
+            "age": 50,
+            "sex": 1,
+            "bmi": 28,
+            "bp": 120,
+            "s1": 85,
+            "s2": 180,
+            "s3": 40,
+            "s4": 5,
+            "s5": 4.5,
+            "s6": 90
+        }
+        
+        # -----------------------
+        # PREPROCESS
+        # -----------------------
+        patient_df = pd.DataFrame([new_patient])
+        
+        # -----------------------
+        # PREDICTION
+        # -----------------------
+        print("\nPREDICTION 150:")
+        print(predict_patient(patient_df, model_150, scaler_150))
+        
+        print("\nPREDICTION 250:")
+        print(predict_patient(patient_df, model_250, scaler_250))
+        
+        -----------
+        # model.py -> training + scaler
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import StandardScaler
+        
+        
+        def create_labels(y, threshold):
+            return (y > threshold).astype(int)
+        
+        
+        def train_model(X, y):
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42
+            )
+        
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+        
+            model = LogisticRegression(max_iter=1000)
+            model.fit(X_train_scaled, y_train)
+        
+            return model, scaler
+        
+        --------------------------------------------------------------------------------
+        --------------------------------------------------------------------------------
+        # prediction.py
+        
+        def predict_patient(patient_df, model, scaler):
+            """
+            patient_df: DataFrame (preprocessed)
+            """
+        
+            X_scaled = scaler.transform(patient_df)
+        
+            pred = model.predict(X_scaled)[0]
+        
+            return "Endangered" if pred == 1 else "Not Endangered"
+    
+    
+    [ml]
+      - analysis.py:
+        # analysis.py
+        
+        def dataset_summary(X, y):
+            return {
+                "shape": X.shape,
+                "feature_means": X.mean().to_dict(),
+                "feature_std": X.std().to_dict(),
+                "target_mean": float(y.mean()),
+                "target_min": float(y.min()),
+                "target_max": float(y.max())
+            }
+        
+        
+        def class_distribution(y, threshold):
+            labels = (y > threshold).astype(int)
+        
+            return {
+                "not_endangered": int((labels == 0).sum()),
+                "endangered": int((labels == 1).sum())
+            }
+    
+      - dataset.py:
+        # dataset.py
+        from sklearn.datasets import load_diabetes
+        
+        def load_data():
+            X, y = load_diabetes(return_X_y=True, as_frame=True)
+            return X, y
+    
+      - model.py:
+        # model.py -> training + scaler
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import StandardScaler
+        
+        
+        def create_labels(y, threshold):
+            return (y > threshold).astype(int)
+        
+        
+        def train_model(X, y):
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42
+            )
+        
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+        
+            model = LogisticRegression(max_iter=1000)
+            model.fit(X_train_scaled, y_train)
+        
+            return model, scaler
+    
+      - prediction.py:
+        # prediction.py
+        
+        def predict_patient(patient_df, model, scaler):
+            """
+            patient_df: DataFrame (preprocessed)
+            """
+        
+            X_scaled = scaler.transform(patient_df)
+        
+            pred = model.predict(X_scaled)[0]
+        
+            return "Endangered" if pred == 1 else "Not Endangered"
+    
+    [static]
+      - style.css:
+        body {
+            background: #f4f8fb;
+            color: #1f2d3d;
+            font-family: "Segoe UI", Arial, sans-serif;
+            text-align: center;
+        }
+        
+        .container {
+            margin-top: 30px;
+        }
+        
+        .menu {
+            margin-bottom: 20px;
+        }
+        
+        .menu button {
+            margin: 5px;
+            padding: 10px 15px;
+            border: 1px solid #2c7be5;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #2c7be5;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .menu button:hover {
+            background: #1a5fc1;
+        }
+        
+        .card {
+            background: #ffffff;
+            display: inline-block;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: left;
+            border: 1px solid #e0e6ed;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 15px;
+            width: 520px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-size: 13px;
+            margin-bottom: 3px;
+            color: #4a5a6a;
+        }
+        
+        input, select {
+            font-size: 13px;
+            padding: 6px;
+            border: 1px solid #ccd6e0;
+            border-radius: 4px;
+            background: #ffffff;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2c7be5;
+        }
+        
+        .full-width {
+            grid-column: span 2;
+        }
+        
+        button.submit {
+            margin-top: 10px;
+            padding: 8px;
+            width: 100%;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #00a86b;
+            color: white;
+            font-weight: 500;
+        }
+        
+        button.submit:hover {
+            background: #008f5a;
+        }
+        
+        #result {
+            margin-top: 15px;
+            background: #ffffff;
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e6ed;
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .active {
+            display: block;
+        }
+    
+    [templates]
+      - index.html:
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Diabetes Dashboard</title>
+            <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        </head>
+        
+        <body>
+        
+        <div class="container">
+        
+            <h1>Diabetes Dashboard</h1>
+        
+            <!-- MENU -->
+            <div class="menu">
+                <button onclick="showSection('dataset')">Dataset summary</button>
+                <button onclick="showSection('viz')">Visualizations</button>
+                <button onclick="showSection('predict')">Prediction</button>
+                <!-- <button onclick="showSection('config')">Configuration</button> -->
+            </div>
+        
+            <!-- ================= DATASET ================= -->
+            <div id="dataset" class="section active">
+                <div class="card">
+                    <h3>Dataset Summary</h3>
+                    <p>Itt fogod megjeleníteni a backend /dataset válaszát.</p>
+                </div>
+            </div>
+        
+            <!-- ================= VISUALIZATION ================= -->
+            <div id="viz" class="section">
+                <div class="card">
+                    <h3>Visualizations</h3>
+                    <p>Itt jönnek majd a Chart.js grafikonok.</p>
+                </div>
+            </div>
+        
+            <!-- ================= PREDICTION ================= -->
+            <div id="predict" class="section">
+        
+                <div class="card">
+        
+                    <form id="patientForm">
+                        <div class="form-grid">
+        
+                            <div class="form-group">
+                                <label>Életkor</label>
+                                <input type="number" name="age" min="0" max="120" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>Nem</label>
+                                <select name="sex">
+                                    <option value="female">Nő</option>
+                                    <option value="male">Férfi</option>
+                                </select>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>BMI</label>
+                                <input type="number" name="bmi" step="0.1" min="10" max="60" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>Vérnyomás</label>
+                                <input type="number" name="bp" min="50" max="250" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>Teljes koleszterinszint (s1)</label>
+                                <input type="number" name="s1" min="50" max="400" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>LDL koleszterin (s2)</label>
+                                <input type="number" name="s2" min="20" max="300" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>HDL koleszterin (s3)</label>
+                                <input type="number" name="s3" min="10" max="150" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>Teljes koleszterin / HDL arány (s4)</label>
+                                <input type="number" name="s4" step="0.1" min="1" max="20" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>Trigliceridek (log érték) (s5)</label>
+                                <input type="number" step="0.1" name="s5" min="0" max="10" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>Vércukorszint (s6)</label>
+                                <input type="number" name="s6" min="50" max="400" required>
+                            </div>
+        
+                            <div class="full-width">
+                                <button class="submit" type="submit">Küldés</button>
+                            </div>
+        
+                        </div>
+        
+                    </form>
+                    <!-- threshold value -->
+                    <p>Threshold set to: <strong>{{ current_threshold }}</strong></p>
+                    <!-- result -->
+                    <h3 id="result"></h3>
+                    
+        
+                </div>
+            </div>
+        
+            <!-- ================= Configuration - threshold ================= -->
+            <!-- <div id="config" class="section">
+                <div class="card">
+                    <h3>Configuration</h3>
+                    <p>Set the current threshold for ML.</p>
+                </div>
+            </div> -->
+        
+        </div>
+        
+        <script>
+            // sections
+            function showSection(id) {
+                document.querySelectorAll('.section').forEach(sec => {
+                    sec.classList.remove('active');
+                });
+                document.getElementById(id).classList.add('active');
+            }
+        
+            // prediction section
+            // input data validation
+            document.querySelectorAll("input[type='number']").forEach(input => {
+                input.addEventListener("input", () => {
+                    if (input.validity.rangeOverflow || input.validity.rangeUnderflow) {
+                        input.style.borderColor = "red";
+                    } else {
+                        input.style.borderColor = "#ccd6e0";
+                    }
+                });
+            });
+        
+            document.getElementById("patientForm").addEventListener("submit", async function(e) {
+                e.preventDefault();
+        
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData.entries());
+        
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                });
+        
+                const result = await response.json();
+        
+                document.getElementById("result").innerText =
+                    "Prediction: " + result.prediction;
+            });
+        </script>
+        
+        </body>
+        </html>
+
+  - requirements.txt:
+    flask
+    scikit-learn
+    pandas
+    sqlite3
+
+[ml]
+  - analysis.py:
+    # analysis.py
+    
+    def dataset_summary(X, y):
+        return {
+            "shape": X.shape,
+            "feature_means": X.mean().to_dict(),
+            "feature_std": X.std().to_dict(),
+            "target_mean": float(y.mean()),
+            "target_min": float(y.min()),
+            "target_max": float(y.max())
+        }
+    
+    
+    def class_distribution(y, threshold):
+        labels = (y > threshold).astype(int)
+    
+        return {
+            "not_endangered": int((labels == 0).sum()),
+            "endangered": int((labels == 1).sum())
+        }
+
+  - dataset.py:
+    # dataset.py
+    from sklearn.datasets import load_diabetes
+    
+    def load_data():
+        X, y = load_diabetes(return_X_y=True, as_frame=True)
+        return X, y
+
+  - model.py:
+    # model.py -> training + scaler
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import StandardScaler
+    
+    
+    def create_labels(y, threshold):
+        return (y > threshold).astype(int)
+    
+    
+    def train_model(X, y):
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+    
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+    
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X_train_scaled, y_train)
+    
+        return model, scaler
+
+  - prediction.py:
+    # prediction.py
+    
+    def predict_patient(patient_df, model, scaler):
+        """
+        patient_df: DataFrame (preprocessed)
+        """
+    
+        X_scaled = scaler.transform(patient_df)
+    
+        pred = model.predict(X_scaled)[0]
+    
+        return "Endangered" if pred == 1 else "Not Endangered"
+
+[static]
+  - style.css:
+    body {
+        background: #f4f8fb;
+        color: #1f2d3d;
+        font-family: "Segoe UI", Arial, sans-serif;
+        text-align: center;
+    }
+    
+    .container {
+        margin-top: 30px;
+    }
+    
+    .menu {
+        margin-bottom: 20px;
+    }
+    
+    .menu button {
+        margin: 5px;
+        padding: 10px 15px;
+        border: 1px solid #2c7be5;
+        border-radius: 5px;
+        cursor: pointer;
+        background: #2c7be5;
+        color: white;
+        font-weight: 500;
+    }
+    
+    .menu button:hover {
+        background: #1a5fc1;
+    }
+    
+    .card {
+        background: #ffffff;
+        display: inline-block;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: left;
+        border: 1px solid #e0e6ed;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 15px;
+        width: 520px;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    label {
+        font-size: 13px;
+        margin-bottom: 3px;
+        color: #4a5a6a;
+    }
+    
+    input, select {
+        font-size: 13px;
+        padding: 6px;
+        border: 1px solid #ccd6e0;
+        border-radius: 4px;
+        background: #ffffff;
+    }
+    
+    input:focus, select:focus {
+        outline: none;
+        border-color: #2c7be5;
+    }
+    
+    .full-width {
+        grid-column: span 2;
+    }
+    
+    button.submit {
+        margin-top: 10px;
+        padding: 8px;
+        width: 100%;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background: #00a86b;
+        color: white;
+        font-weight: 500;
+    }
+    
+    button.submit:hover {
+        background: #008f5a;
+    }
+    
+    #result {
+        margin-top: 15px;
+        background: #ffffff;
+        display: inline-block;
+        padding: 10px 15px;
+        border-radius: 6px;
+        border: 1px solid #e0e6ed;
+    }
+    
+    .section {
+        display: none;
+    }
+    
+    .active {
+        display: block;
+    }
+
+[templates]
+  - index.html:
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Diabetes Dashboard</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    
+    <body>
+    
+    <div class="container">
+    
+        <h1>Diabetes Dashboard</h1>
+    
+        <!-- MENU -->
+        <div class="menu">
+            <button onclick="showSection('dataset')">Dataset summary</button>
+            <button onclick="showSection('viz')">Visualizations</button>
+            <button onclick="showSection('predict')">Prediction</button>
+            <!-- <button onclick="showSection('config')">Configuration</button> -->
+        </div>
+    
+        <!-- ================= DATASET ================= -->
+        <div id="dataset" class="section active">
+            <div class="card">
+                <h3>Dataset Summary</h3>
+                <p>Itt fogod megjeleníteni a backend /dataset válaszát.</p>
+            </div>
+        </div>
+    
+        <!-- ================= VISUALIZATION ================= -->
+        <div id="viz" class="section">
+            <div class="card">
+                <h3>Visualizations</h3>
+                <p>Itt jönnek majd a Chart.js grafikonok.</p>
+            </div>
+        </div>
+    
+        <!-- ================= PREDICTION ================= -->
+        <div id="predict" class="section">
+    
+            <div class="card">
+    
+                <form id="patientForm">
+                    <div class="form-grid">
+    
+                        <div class="form-group">
+                            <label>Életkor</label>
+                            <input type="number" name="age" min="0" max="120" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>Nem</label>
+                            <select name="sex">
+                                <option value="female">Nő</option>
+                                <option value="male">Férfi</option>
+                            </select>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>BMI</label>
+                            <input type="number" name="bmi" step="0.1" min="10" max="60" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>Vérnyomás</label>
+                            <input type="number" name="bp" min="50" max="250" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>Teljes koleszterinszint (s1)</label>
+                            <input type="number" name="s1" min="50" max="400" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>LDL koleszterin (s2)</label>
+                            <input type="number" name="s2" min="20" max="300" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>HDL koleszterin (s3)</label>
+                            <input type="number" name="s3" min="10" max="150" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>Teljes koleszterin / HDL arány (s4)</label>
+                            <input type="number" name="s4" step="0.1" min="1" max="20" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>Trigliceridek (log érték) (s5)</label>
+                            <input type="number" step="0.1" name="s5" min="0" max="10" required>
+                        </div>
+    
+                        <div class="form-group">
+                            <label>Vércukorszint (s6)</label>
+                            <input type="number" name="s6" min="50" max="400" required>
+                        </div>
+    
+                        <div class="full-width">
+                            <button class="submit" type="submit">Küldés</button>
+                        </div>
+    
+                    </div>
+    
+                </form>
+                <!-- threshold value -->
+                <p>Threshold set to: <strong>{{ current_threshold }}</strong></p>
+                <!-- result -->
+                <h3 id="result"></h3>
+                
+    
+            </div>
+        </div>
+    
+        <!-- ================= Configuration - threshold ================= -->
+        <!-- <div id="config" class="section">
+            <div class="card">
+                <h3>Configuration</h3>
+                <p>Set the current threshold for ML.</p>
+            </div>
+        </div> -->
+    
+    </div>
+    
+    <script>
+        // sections
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
+        }
+    
+        // prediction section
+        // input data validation
+        document.querySelectorAll("input[type='number']").forEach(input => {
+            input.addEventListener("input", () => {
+                if (input.validity.rangeOverflow || input.validity.rangeUnderflow) {
+                    input.style.borderColor = "red";
+                } else {
+                    input.style.borderColor = "#ccd6e0";
+                }
+            });
+        });
+    
+        document.getElementById("patientForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+    
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+    
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+    
+            const result = await response.json();
+    
+            document.getElementById("result").innerText =
+                "Prediction: " + result.prediction;
+        });
+    </script>
+    
+    </body>
+    </html>

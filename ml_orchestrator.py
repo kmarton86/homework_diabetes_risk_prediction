@@ -6,32 +6,33 @@ from ml.prediction import predict_patient
 from ml.analysis import dataset_summary, class_distribution
 
 DB_PATH = "diabetes.db"
+THRESHOLD_150 = 150
+THRESHOLD_250 = 250
 
+CURRENT_THRESHOLD = THRESHOLD_150
 
 # -----------------------
 # LOAD DATA
 # -----------------------
-def get_dataset(DB_PATH):
-    df = load_from_db(DB_PATH)
-    return df
-
 """
 X = bemeneti jellemzők (features): age, bmi, bp, stb.
 y = eredmény (target) -> drop oka, hogy ezt a ML-nek kell megtanulnia, nem adhatjuk át
 """
-def get_X_y():
-    df = get_dataset()
+def get_X_y_from_dataset():
+    df = load_from_db(DB_PATH)
     X = df.drop(columns=["id", "target"])
     y = df["target"]
     return X, y
 
-
 # -----------------------
-# TRAIN MODELS
+# TRAIN MODELS - for both scenarios
 # -----------------------
-def train_models():
-    X, y = get_X_y()
+MODELS = None
 
+def train_all_models():
+    X, y = get_X_y_from_dataset()
+
+    # create_labels, train_model from ml.model
     y_150 = create_labels(y, 150)
     y_250 = create_labels(y, 250)
 
@@ -39,40 +40,69 @@ def train_models():
     model_250, scaler_250 = train_model(X, y_250)
 
     return {
-        "150": (model_150, scaler_150),
-        "250": (model_250, scaler_250)
+        150: (model_150, scaler_150),
+        250: (model_250, scaler_250)
     }
 
+# train all models - call it once 
+def init_models():
+    global MODELS
+    MODELS = train_all_models()
 
 # -----------------------
-# DATASET INFO
+# ML ANALYSIS
 # -----------------------
+# DATASET SUMMARY
 def get_dataset_summary():
-    X, y = get_X_y()
+    X, y = get_X_y_from_dataset()
     return dataset_summary(X, y)
 
-
+# CLASS DISTRIBUTION
 def get_class_distribution(threshold):
-    _, y = get_X_y()
+    # only y is needed for class_distribution
+    _, y = get_X_y_from_dataset()
     return class_distribution(y, threshold)
-
 
 # -----------------------
 # PREDICTION
 # -----------------------
-def predict(models, patient_dict, threshold="250"):
-    model, scaler = models[threshold]
+def run_prediction(patient_df, threshold):
+    global MODELS
 
-    df = pd.DataFrame([patient_dict])
+    # safety check
+    if MODELS is None:
+        init_models()
 
-    return predict_patient(df, model, scaler)
+    model, scaler = MODELS[threshold]
+    return predict_patient(patient_df, model, scaler)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    
+    init_models()  
+
     print("\nDATASET SUMMARY:")
     print(get_dataset_summary())
 
     print("\nCLASS DISTRIBUTION (150):")
-    print(get_class_distribution(150))
+    print(get_class_distribution(THRESHOLD_150))
 
     print("\nCLASS DISTRIBUTION (250):")
-    print(get_class_distribution(250))
+    print(get_class_distribution(THRESHOLD_250))
+
+    new_patient = {
+        "age": 50,
+        "sex": 0,
+        "bmi": 28,
+        "bp": 120,
+        "s1": 85,
+        "s2": 180,
+        "s3": 40,
+        "s4": 5,
+        "s5": 4.5,
+        "s6": 90
+    }
+
+    patient_df = pd.DataFrame([new_patient])
+
+    print(f"\nPREDICTION (threshold = {CURRENT_THRESHOLD}):")
+    print(run_prediction(patient_df, CURRENT_THRESHOLD))
