@@ -1,7 +1,7 @@
 body {
-    background-color: #001f3f;
-    color: #fff;
-    font-family: Arial, sans-serif;
+    background: #f4f8fb;
+    color: #1f2d3d;
+    font-family: "Segoe UI", Arial, sans-serif;
     text-align: center;
 }
 
@@ -16,22 +16,25 @@ body {
 .menu button {
     margin: 5px;
     padding: 10px 15px;
-    border: none;
+    border: 1px solid #2c7be5;
     border-radius: 5px;
     cursor: pointer;
+    background: #2c7be5;
+    color: white;
+    font-weight: 500;
 }
 
 .menu button:hover {
-    background: #00509e;
-    color: white;
+    background: #1a5fc1;
 }
 
 .card {
-    background: #003366;
+    background: #ffffff;
     display: inline-block;
     padding: 20px;
     border-radius: 8px;
     text-align: left;
+    border: 1px solid #e0e6ed;
 }
 
 .form-grid {
@@ -49,13 +52,20 @@ body {
 label {
     font-size: 13px;
     margin-bottom: 3px;
+    color: #4a5a6a;
 }
 
 input, select {
     font-size: 13px;
-    padding: 5px;
-    border: none;
+    padding: 6px;
+    border: 1px solid #ccd6e0;
     border-radius: 4px;
+    background: #ffffff;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #2c7be5;
 }
 
 .full-width {
@@ -69,14 +79,22 @@ button.submit {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    background: #00a86b;
+    color: white;
+    font-weight: 500;
+}
+
+button.submit:hover {
+    background: #008f5a;
 }
 
 #result {
     margin-top: 15px;
-    background: #003366;
+    background: #ffffff;
     display: inline-block;
     padding: 10px 15px;
     border-radius: 6px;
+    border: 1px solid #e0e6ed;
 }
 
 .section {
