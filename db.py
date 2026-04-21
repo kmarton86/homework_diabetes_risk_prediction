@@ -1,10 +1,9 @@
 import sqlite3
 from ml.dataset import load_data  # állítsd a pontos path-ra
 
-DB_PATH = "diabetes.db"
+# DB_PATH = "diabetes.db"
 
-
-def init_db():
+def init_db(DB_PATH):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 

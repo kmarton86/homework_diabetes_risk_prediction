@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from sklearn.datasets import load_diabetes
 
+from db import init_db
 
 app = Flask(__name__)
 
@@ -110,4 +111,6 @@ def predict():
 # =========================
 # =========================
 if __name__ == '__main__':
+    # init database at startup
+    init_db(DB_PATH)
     app.run(debug=True)
