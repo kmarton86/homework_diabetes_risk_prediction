@@ -1,66 +1,78 @@
 import pandas as pd
 
-from ml.dataset import load_data
+from db import load_from_db
 from ml.model import create_labels, train_model
 from ml.prediction import predict_patient
 from ml.analysis import dataset_summary, class_distribution
 
+DB_PATH = "diabetes.db"
+
+
 # -----------------------
 # LOAD DATA
 # -----------------------
-X, y = load_data()
-# TODO - store in DB 
+def get_dataset(DB_PATH):
+    df = load_from_db(DB_PATH)
+    return df
 
-# -----------------------
-# LABELS
-# -----------------------
-y_150 = create_labels(y, 150)
-y_250 = create_labels(y, 250)
+"""
+X = bemeneti jellemzők (features): age, bmi, bp, stb.
+y = eredmény (target) -> drop oka, hogy ezt a ML-nek kell megtanulnia, nem adhatjuk át
+"""
+def get_X_y():
+    df = get_dataset()
+    X = df.drop(columns=["id", "target"])
+    y = df["target"]
+    return X, y
+
 
 # -----------------------
 # TRAIN MODELS
 # -----------------------
-model_150, scaler_150 = train_model(X, y_150)
-model_250, scaler_250 = train_model(X, y_250)
+def train_models():
+    X, y = get_X_y()
+
+    y_150 = create_labels(y, 150)
+    y_250 = create_labels(y, 250)
+
+    model_150, scaler_150 = train_model(X, y_150)
+    model_250, scaler_250 = train_model(X, y_250)
+
+    return {
+        "150": (model_150, scaler_150),
+        "250": (model_250, scaler_250)
+    }
+
 
 # -----------------------
-# ANALYSIS
+# DATASET INFO
 # -----------------------
-print("\nDATASET SUMMARY:")
-print(dataset_summary(X, y))
+def get_dataset_summary():
+    X, y = get_X_y()
+    return dataset_summary(X, y)
 
-print("\nCLASS DISTRIBUTION (150):")
-print(class_distribution(y, 150))
 
-print("\nCLASS DISTRIBUTION (250):")
-print(class_distribution(y, 250))
+def get_class_distribution(threshold):
+    _, y = get_X_y()
+    return class_distribution(y, threshold)
 
-# -----------------------
-# NEW PATIENT
-# -----------------------
-new_patient = {
-    "age": 50,
-    "sex": 0,
-    "bmi": 28,
-    "bp": 120,
-    "s1": 85,
-    "s2": 180,
-    "s3": 40,
-    "s4": 5,
-    "s5": 4.5,
-    "s6": 90
-}
-
-# -----------------------
-# PREPROCESS
-# -----------------------
-patient_df = pd.DataFrame([new_patient])
 
 # -----------------------
 # PREDICTION
 # -----------------------
-print("\nPREDICTION 150:")
-print(predict_patient(patient_df, model_150, scaler_150))
+def predict(models, patient_dict, threshold="250"):
+    model, scaler = models[threshold]
 
-print("\nPREDICTION 250:")
-print(predict_patient(patient_df, model_250, scaler_250))
+    df = pd.DataFrame([patient_dict])
+
+    return predict_patient(df, model, scaler)
+
+if __name__ == '__main__':
+    print("\nDATASET SUMMARY:")
+    print(get_dataset_summary())
+
+    print("\nCLASS DISTRIBUTION (150):")
+    print(get_class_distribution(150))
+
+    print("\nCLASS DISTRIBUTION (250):")
+    print(get_class_distribution(250))

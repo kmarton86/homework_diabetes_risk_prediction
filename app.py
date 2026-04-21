@@ -5,9 +5,9 @@ from db import init_db
 
 app = Flask(__name__)
 
-# =========================
+# -----------------------
 #  App config
-# =========================
+# -----------------------
 
 # Database
 DB_PATH = "diabetes.db"
@@ -19,9 +19,9 @@ THRESHOLD_2 = 250
 CURRENT_THRESHOLD = THRESHOLD_2
 
 
-# =========================
+# -----------------------
 # FRONTEND ENTRY
-# =========================
+# -----------------------
 @app.route('/')
 def index():
     return render_template(
@@ -30,9 +30,9 @@ def index():
     )
 
 
-# =========================
+# -----------------------
 # 1. DATASET SUMMARY API
-# =========================
+# -----------------------
 @app.route('/api/dataset', methods=['GET'])
 def dataset_summary():
     data = load_diabetes()
@@ -46,9 +46,9 @@ def dataset_summary():
     return jsonify(summary)
 
 
-# =========================
+# -----------------------
 # 2. VISUALIZATION DATA API
-# =========================
+# -----------------------
 @app.route('/api/visualization', methods=['GET'])
 def visualization_data():
     data = load_diabetes()
@@ -65,9 +65,9 @@ def visualization_data():
     return jsonify(response)
 
 
-# =========================
+# -----------------------
 # 3. PREDICTION API
-# =========================
+# -----------------------
 @app.route('/api/predict', methods=['POST'])
 def predict():
 
@@ -108,8 +108,7 @@ def predict():
     })
 
 
-# =========================
-# =========================
+# -----------------------
 if __name__ == '__main__':
     # init database at startup
     init_db(DB_PATH)

@@ -1,4 +1,6 @@
 import sqlite3
+import pandas as pd
+
 from ml.dataset import load_data  # állítsd a pontos path-ra
 
 # DB_PATH = "diabetes.db"
@@ -56,6 +58,12 @@ def init_db(DB_PATH):
         print("DB already initialized")
 
     conn.close()
+
+def load_from_db(DB_PATH):
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT * FROM diabetes", conn)
+    conn.close()
+    return df
 
 if __name__ == "__main__":
     init_db()
