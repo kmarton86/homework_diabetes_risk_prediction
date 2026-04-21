@@ -1,4 +1,5 @@
 import pandas as pd
+import json # for testing
 
 from db import load_from_db, init_db
 from ml.model import create_labels, train_model
@@ -81,7 +82,7 @@ def get_class_distribution(threshold):
 
 
 # -----------------------
-# MODEL PERFORMANCE (NEW - VIZ FRIENDLY)
+# MODEL PERFORMANCE 
 # -----------------------
 def get_model_performance():
     global MODELS
@@ -95,7 +96,7 @@ def get_model_performance():
     }
 
 # -----------------------
-# VISUALIZATION BUNDLE (NEW)
+# VISUALIZATION 
 # -----------------------
 def get_visualization_data():
     return {
@@ -105,6 +106,14 @@ def get_visualization_data():
         "model_performance": get_model_performance()
     }
 
+def get_visualization_bundle():
+    X, y = get_X_y_from_dataset()
+
+    return {
+        "dataset_summary": dataset_summary(X, y),
+        "class_distribution_150": class_distribution(y, 150),
+        "class_distribution_250": class_distribution(y, 250)
+    }
 # -----------------------
 # PREDICTION
 # -----------------------
@@ -170,6 +179,6 @@ if __name__ == "__main__":
     # -----------------------
     # PRETTY JSON (frontend-ready check)
     # -----------------------
-    import json
+
     print("\nPRETTY JSON:\n")
     print(json.dumps(viz_data, indent=4))

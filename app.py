@@ -1,6 +1,15 @@
 from flask import Flask, render_template, request, jsonify
+# TODO ezt csekkolni
 from sklearn.datasets import load_diabetes
 
+from ml_orchestrator import (
+    init_models,
+    get_dataset_summary,
+    get_class_distribution,
+    run_prediction,
+    get_visualization_bundle
+)
+# TODO ezt csekkolni
 from db import init_db
 
 app = Flask(__name__)
@@ -35,15 +44,7 @@ def index():
 # -----------------------
 @app.route('/api/dataset', methods=['GET'])
 def dataset_summary():
-    data = load_diabetes()
-
-    summary = {
-        "samples": len(data.data),
-        "features": len(data.feature_names),
-        "feature_names": data.feature_names
-    }
-
-    return jsonify(summary)
+    return jsonify(get_dataset_summary())
 
 
 # -----------------------
@@ -51,18 +52,7 @@ def dataset_summary():
 # -----------------------
 @app.route('/api/visualization', methods=['GET'])
 def visualization_data():
-    data = load_diabetes()
-
-    # skeleton: csak nyers adatot adunk vissza
-    # frontend (Chart.js) fogja rajzolni
-
-    response = {
-        "bmi": data.data[:, 2].tolist(),
-        "bp": data.data[:, 3].tolist(),
-        "target": data.target.tolist()
-    }
-
-    return jsonify(response)
+    return jsonify(get_visualization_bundle())
 
 
 # -----------------------
@@ -98,12 +88,14 @@ def predict():
         return jsonify({"error": "Invalid input"}), 400
 
     print("Received patient:", patient)
+    prediction = run_prediction(patient, THRESHOLD_150)
 
-    # skeleton prediction (ML később jön ide)
-    fake_prediction = "Not Endangered"
+    # test
+    test_prediction = "Not Endangered"
 
     return jsonify({
-        "prediction": fake_prediction,
+        # "prediction": test_prediction,
+        "prediction": prediction,
         "patient": patient
     })
 
@@ -111,5 +103,6 @@ def predict():
 # -----------------------
 if __name__ == '__main__':
     # init database at startup
-    init_db(DB_PATH)
+    # init_db(DB_PATH)
+    init_models()
     app.run(debug=True)
