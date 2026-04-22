@@ -63,24 +63,30 @@ def predict():
 
     if not data:
         return jsonify({"error": "No JSON received"}), 400
+    
+    """
+        The incoming sex data (string) needs to be converted to numeric values. 
+        These mapping datas are based on the stored dataset values. This is for trial purpose only - 
+        the real conversion should be researched.
 
+    """
     sex_map = {
-        "female": 0,
-        "male": 1
+        "female": -0.044642,
+        "male": 0.050680 
     }
 
     try:
         patient = {
             "age": int(data.get("age")),
-            "sex": sex_map.get(data.get("sex")),
+            "sex": float(sex_map.get(data.get("sex"))),
             "bmi": float(data.get("bmi")),
-            "bp": int(data.get("bp")),
-            "s1": int(data.get("s1")),
-            "s2": int(data.get("s2")),
-            "s3": int(data.get("s3")),
-            "s4": int(data.get("s4")),
+            "bp": float(data.get("bp")),
+            "s1": float(data.get("s1")),
+            "s2": float(data.get("s2")),
+            "s3": float(data.get("s3")),
+            "s4": float(data.get("s4")),
             "s5": float(data.get("s5")),
-            "s6": int(data.get("s6"))
+            "s6": float(data.get("s6"))
         }
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid input"}), 400
