@@ -1,7 +1,7 @@
 import pandas as pd
 import json # for testing
 
-from db import load_from_db, init_db
+from db import load_from_db
 from ml.model import create_labels, train_model
 from ml.prediction import predict_patient
 from ml.analysis import dataset_summary, class_distribution
@@ -56,12 +56,6 @@ def train_all_models():
 
 # train all models - call it once from app.py
 def init_models():
-    # load dataset and init db
-    try:
-        init_db(DB_PATH)
-    except Exception as e:
-        print(f"Error initializing database: {e}")
-
     global MODELS
     MODELS = train_all_models()
 

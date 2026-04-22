@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-# TODO ezt csekkolni
-from sklearn.datasets import load_diabetes
+import pandas as pd
 
 from ml_orchestrator import (
     init_models,
@@ -9,7 +8,6 @@ from ml_orchestrator import (
     run_prediction,
     get_visualization_bundle
 )
-# TODO ezt csekkolni
 from db import init_db
 
 app = Flask(__name__)
@@ -88,7 +86,9 @@ def predict():
         return jsonify({"error": "Invalid input"}), 400
 
     print("Received patient:", patient)
-    prediction = run_prediction(patient, THRESHOLD_150)
+    # convert dict -> DataFrame
+    patient_df = pd.DataFrame([patient])
+    prediction = run_prediction(patient_df, THRESHOLD_150)
 
     # test
     test_prediction = "Not Endangered"
@@ -103,6 +103,15 @@ def predict():
 # -----------------------
 if __name__ == '__main__':
     # init database at startup
-    # init_db(DB_PATH)
-    init_models()
+    try:
+        init_db(DB_PATH)
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
+    # init models
+    try:
+        init_models()
+    except Exception as e:
+        print(f"Error initializing models: {e}")
+
     app.run(debug=True)
