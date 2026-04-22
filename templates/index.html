@@ -2,7 +2,11 @@
 <html>
 <head>
     <title>Diabetes Dashboard</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -16,22 +20,32 @@
         <button onclick="showSection('dataset')">Dataset summary</button>
         <button onclick="showSection('viz')">Visualizations</button>
         <button onclick="showSection('predict')">Prediction</button>
-        <!-- <button onclick="showSection('config')">Configuration</button> -->
     </div>
 
     <!-- ================= DATASET ================= -->
     <div id="dataset" class="section active">
         <div class="card">
             <h3>Dataset Summary</h3>
-            <p>Itt fogod megjeleníteni a backend /dataset válaszát.</p>
+
+            <p><b>Shape:</b> <span id="shape"></span></p>
+            <p><b>Target mean:</b> <span id="target_mean"></span></p>
+            <p><b>Target range:</b> <span id="target_range"></span></p>
+
+            <h4>Feature Means</h4>
+            <pre id="feature_means"></pre>
         </div>
     </div>
 
     <!-- ================= VISUALIZATION ================= -->
     <div id="viz" class="section">
         <div class="card">
-            <h3>Visualizations</h3>
-            <p>Itt jönnek majd a Chart.js grafikonok.</p>
+
+            <h3>Class Distribution</h3>
+            <canvas id="classChart"></canvas>
+
+            <h3>Model Accuracy</h3>
+            <canvas id="accuracyChart"></canvas>
+
         </div>
     </div>
 
@@ -44,124 +58,184 @@
                 <div class="form-grid">
 
                     <div class="form-group">
-                        <label>Életkor</label>
-                        <input type="number" name="age" min="0" max="120" required>
+                        <label>Age</label>
+                        <input type="number" name="age" min="0" max="120" required placeholder="e.g. 45">
                     </div>
 
                     <div class="form-group">
-                        <label>Nem</label>
+                        <label>Sex</label>
                         <select name="sex">
-                            <option value="female">Nő</option>
-                            <option value="male">Férfi</option>
+                            <option value="female">Female</option>
+                            <option value="male">Male</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label>BMI</label>
-                        <input type="number" name="bmi" step="0.1" min="10" max="60" required>
+                        <input type="number" name="bmi" step="0.1" min="10" max="60" required placeholder="e.g. 45">
                     </div>
 
                     <div class="form-group">
-                        <label>Vérnyomás</label>
-                        <input type="number" name="bp" min="50" max="250" required>
+                        <label>Blood Pressure</label>
+                        <input type="number" name="bp" min="50" max="250" required placeholder="e.g. 120">
                     </div>
 
                     <div class="form-group">
-                        <label>Teljes koleszterinszint (s1)</label>
+                        <label>Total Cholesterol (s1)</label>
                         <input type="number" name="s1" min="50" max="400" required>
                     </div>
 
                     <div class="form-group">
-                        <label>LDL koleszterin (s2)</label>
+                        <label>LDL Cholesterol (s2)</label>
                         <input type="number" name="s2" min="20" max="300" required>
                     </div>
 
                     <div class="form-group">
-                        <label>HDL koleszterin (s3)</label>
+                        <label>HDL Cholesterol (s3)</label>
                         <input type="number" name="s3" min="10" max="150" required>
                     </div>
 
                     <div class="form-group">
-                        <label>Teljes koleszterin / HDL arány (s4)</label>
+                        <label>Total Cholesterol / HDL Ratio (s4)</label>
                         <input type="number" name="s4" step="0.1" min="1" max="20" required>
                     </div>
 
                     <div class="form-group">
-                        <label>Trigliceridek (log érték) (s5)</label>
+                        <label>Triglycerides (log value) (s5)</label>
                         <input type="number" step="0.1" name="s5" min="0" max="10" required>
                     </div>
 
                     <div class="form-group">
-                        <label>Vércukorszint (s6)</label>
+                        <label>Blood Sugar Level (s6)</label>
                         <input type="number" name="s6" min="50" max="400" required>
                     </div>
 
                     <div class="full-width">
-                        <button class="submit" type="submit">Küldés</button>
+                        <button class="submit" type="submit">Submit</button>
                     </div>
 
                 </div>
-
             </form>
-            <!-- threshold value -->
-            <p>Threshold set to: <strong>{{ current_threshold }}</strong></p>
-            <!-- result -->
+
+            <p>Threshold: <b>{{ current_threshold }}</b></p>
             <h3 id="result"></h3>
-            
 
         </div>
     </div>
 
-    <!-- ================= Configuration - threshold ================= -->
-    <!-- <div id="config" class="section">
-        <div class="card">
-            <h3>Configuration</h3>
-            <p>Set the current threshold for ML.</p>
-        </div>
-    </div> -->
-
 </div>
 
 <script>
-    // sections
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(sec => {
-            sec.classList.remove('active');
-        });
-        document.getElementById(id).classList.add('active');
-    }
 
-    // prediction section
-    // input data validation
-    document.querySelectorAll("input[type='number']").forEach(input => {
-        input.addEventListener("input", () => {
-            if (input.validity.rangeOverflow || input.validity.rangeUnderflow) {
-                input.style.borderColor = "red";
-            } else {
-                input.style.borderColor = "#ccd6e0";
+// ================= SECTION SWITCH =================
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+
+    if (id === "dataset") loadDataset();
+    if (id === "viz") loadVisualization();
+}
+
+// ================= DATASET =================
+async function loadDataset() {
+
+    const res = await fetch("/api/dataset");
+    const data = await res.json();
+
+    document.getElementById("shape").innerText = data.shape;
+    document.getElementById("target_mean").innerText = data.target_mean.toFixed(2);
+    document.getElementById("target_range").innerText =
+        data.target_min + " - " + data.target_max;
+
+    document.getElementById("feature_means").innerText =
+        JSON.stringify(data.feature_means, null, 2);
+}
+
+// ================= VISUALIZATION =================
+let classChart, accuracyChart;
+
+async function loadVisualization() {
+
+    const res = await fetch("/api/visualization");
+    const data = await res.json();
+
+    // ---------- CLASS DISTRIBUTION ----------
+    const class150 = data.class_distribution_150;
+    const class250 = data.class_distribution_250;
+
+    if (classChart) classChart.destroy();
+
+    classChart = new Chart(document.getElementById("classChart"), {
+        type: 'bar',
+        data: {
+            labels: ["Not Endangered", "Endangered"],
+            datasets: [
+                {
+                    label: "Threshold 150",
+                    data: [class150.not_endangered, class150.endangered]
+                },
+                {
+                    label: "Threshold 250",
+                    data: [class250.not_endangered, class250.endangered]
+                }
+            ]
+        }
+    });
+
+    // ---------- MODEL PERFORMANCE ----------
+    if (data.model_performance) {
+
+        const acc150 = data.model_performance["150"].accuracy;
+        const acc250 = data.model_performance["250"].accuracy;
+
+        if (accuracyChart) accuracyChart.destroy();
+
+        accuracyChart = new Chart(document.getElementById("accuracyChart"), {
+            type: 'bar',
+            data: {
+                labels: ["150", "250"],
+                datasets: [{
+                    label: "Accuracy",
+                    data: [acc150, acc250]
+                }]
             }
         });
+    }
+}
+
+// ================= PREDICTION =================
+
+// Input data validation
+document.querySelectorAll("input[type='number']").forEach(input => {
+    input.addEventListener("input", () => {
+        if (input.validity.rangeOverflow || input.validity.rangeUnderflow) {
+            input.style.borderColor = "red";
+        } else {
+            input.style.borderColor = "#ccd6e0";
+        }
+    });
+});
+
+document.getElementById("patientForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const data = Object.fromEntries(new FormData(this).entries());
+
+    const res = await fetch("/api/predict", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
     });
 
-    document.getElementById("patientForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
+    const result = await res.json();
 
-        const formData = new FormData(this);
-        const data = Object.fromEntries(formData.entries());
+    document.getElementById("result").innerText =
+        "Prediction: " + result.prediction;
+});
 
-        const response = await fetch("/predict", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        });
+// AUTO LOAD
+loadDataset();
 
-        const result = await response.json();
-
-        document.getElementById("result").innerText =
-            "Prediction: " + result.prediction;
-    });
 </script>
 
 </body>
