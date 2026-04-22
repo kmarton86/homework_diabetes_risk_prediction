@@ -10,7 +10,6 @@ def dataset_summary(X, y):
         "target_max": float(y.max())
     }
 
-
 def class_distribution(y, threshold):
     labels = (y > threshold).astype(int)
 

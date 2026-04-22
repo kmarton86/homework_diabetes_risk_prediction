@@ -1,16 +1,23 @@
 import pandas as pd
 import json # for testing
+import os
 
 from db import load_from_db
+import config
 from ml.model import create_labels, train_model
 from ml.prediction import predict_patient
 from ml.analysis import dataset_summary, class_distribution
 
-DB_PATH = "diabetes.db"
-THRESHOLD_150 = 150
-THRESHOLD_250 = 250
 
-CURRENT_THRESHOLD = THRESHOLD_150
+# -----------------------
+# CONFIG DATAS
+# -----------------------
+
+# DB_PATH = "data/diabetes.db"
+# THRESHOLD_150 = 150
+# THRESHOLD_250 = 250
+
+# CURRENT_THRESHOLD = THRESHOLD_150
 
 # -----------------------
 # LOAD DATA
@@ -20,7 +27,12 @@ X = bemeneti jellemzők (features): age, bmi, bp, stb.
 y = eredmény (target) -> drop oka, hogy ezt a ML-nek kell megtanulnia, nem adhatjuk át
 """
 def get_X_y_from_dataset():
+    DB_PATH = config.DB_PATH
     df = load_from_db(DB_PATH)
+
+    if df.empty:
+        raise Exception("Database is empty")
+    
     X = df.drop(columns=["id", "target"])
     y = df["target"]
     return X, y
@@ -126,11 +138,8 @@ if __name__ == "__main__":
     print("\nDATASET SUMMARY:")
     print(get_dataset_summary())
 
-    print("\nCLASS DISTRIBUTION (150):")
-    print(get_class_distribution(THRESHOLD_150))
-
-    print("\nCLASS DISTRIBUTION (250):")
-    print(get_class_distribution(THRESHOLD_250))
+    print("\nCLASS DISTRIBUTION (config.CURRENT_THRESHOLD):")
+    print(get_class_distribution(config.CURRENT_THRESHOLD))
 
     print("\nMODEL PERFORMANCE:")
     print(get_model_performance())
@@ -150,8 +159,8 @@ if __name__ == "__main__":
 
     patient_df = pd.DataFrame([new_patient])
 
-    print(f"\nPREDICTION (threshold = {CURRENT_THRESHOLD}):")
-    print(run_prediction(patient_df, CURRENT_THRESHOLD))
+    print(f"\nPREDICTION (threshold = {config.CURRENT_THRESHOLD}):")
+    print(run_prediction(patient_df, config.CURRENT_THRESHOLD))
 
     # -----------------------
     # GET VISUALIZATION BUNDLE

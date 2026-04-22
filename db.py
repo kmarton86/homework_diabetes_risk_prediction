@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 
+import config
 from ml.dataset import load_data  # állítsd a pontos path-ra
 
 # DB_PATH = "diabetes.db"
@@ -9,7 +10,7 @@ def init_db(DB_PATH):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Create table
+    # 1. ALWAYS CREATE TABLE FIRST
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS diabetes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,17 +28,18 @@ def init_db(DB_PATH):
         )
     """)
 
-    # Check if table is empty
+    conn.commit()
+
+    # 2. SAFE CHECK (after table guaranteed to exist)
     cursor.execute("SELECT COUNT(*) FROM diabetes")
     count = cursor.fetchone()[0]
 
-    # if empty populate data from dataset
+    # 3. populate only if empty
     if count == 0:
         print("Loading dataset into DB...")
 
         X, y = load_data()
 
-        # pandas dataframe → numpy / values
         X_values = X.values
         y_values = y.values
 
@@ -66,4 +68,5 @@ def load_from_db(DB_PATH):
     return df
 
 if __name__ == "__main__":
-    init_db()
+    DB_PATH = config.DB_PATH
+    init_db(DB_PATH)

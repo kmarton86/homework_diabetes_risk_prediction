@@ -1,7 +1,0 @@
-load-dabetes: https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_diabetes.html#sklearn.datasets.load_diabetes
-
-ML:
-pip install scikit-learn pandas
-
-Full Stack:
-pip install flask scikit-learn pandas sqlalchemy

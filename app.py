@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
+import os
 
+import config
+from db import init_db
 from ml_orchestrator import (
     init_models,
     get_dataset_summary,
@@ -8,7 +11,7 @@ from ml_orchestrator import (
     run_prediction,
     get_visualization_data
 )
-from db import init_db
+
 
 app = Flask(__name__)
 
@@ -16,14 +19,14 @@ app = Flask(__name__)
 #  App config
 # -----------------------
 
-# Database
-DB_PATH = "diabetes.db"
+# # Database
+# DB_PATH = "data/diabetes.db"
 
-# Model target thresholds
-THRESHOLD_150 = 150
-THRESHOLD_250 = 250
+# # Model target thresholds
+# THRESHOLD_150 = 150
+# THRESHOLD_250 = 250
 
-CURRENT_THRESHOLD = THRESHOLD_150
+# CURRENT_THRESHOLD = THRESHOLD_150
 
 
 # -----------------------
@@ -33,7 +36,7 @@ CURRENT_THRESHOLD = THRESHOLD_150
 def index():
     return render_template(
         'index.html',
-        current_threshold=CURRENT_THRESHOLD
+        current_threshold=config.CURRENT_THRESHOLD
     )
 
 
@@ -92,9 +95,11 @@ def predict():
         return jsonify({"error": "Invalid input"}), 400
 
     print("Received patient:", patient)
+    CURRENT_THRESHOLD = config.CURRENT_THRESHOLD
+    print(f"current threshold: {CURRENT_THRESHOLD}")
     # convert dict -> DataFrame
     patient_df = pd.DataFrame([patient])
-    prediction = run_prediction(patient_df, THRESHOLD_150)
+    prediction = run_prediction(patient_df, CURRENT_THRESHOLD)
 
     # test
     test_prediction = "Not Endangered"
@@ -109,6 +114,7 @@ def predict():
 # -----------------------
 if __name__ == '__main__':
     # init database at startup
+    DB_PATH = config.DB_PATH
     try:
         init_db(DB_PATH)
     except Exception as e:
@@ -120,4 +126,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"Error initializing models: {e}")
 
-    app.run(debug=True)
+    # app.run(debug=True)
+    # for docker
+    app.run(host="0.0.0.0", debug=True)
