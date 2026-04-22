@@ -132,6 +132,7 @@ function showSection(id) {
     document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
     document.getElementById(id).classList.add('active');
 
+    // load dataset from backend
     if (id === "dataset") loadDataset();
     if (id === "viz") loadVisualization();
 }
@@ -216,6 +217,7 @@ document.querySelectorAll("input[type='number']").forEach(input => {
     });
 });
 
+// Prediction
 document.getElementById("patientForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 

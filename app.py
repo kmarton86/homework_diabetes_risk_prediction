@@ -6,7 +6,7 @@ from ml_orchestrator import (
     get_dataset_summary,
     get_class_distribution,
     run_prediction,
-    get_visualization_bundle
+    get_visualization_data
 )
 from db import init_db
 
@@ -50,7 +50,7 @@ def dataset_summary():
 # -----------------------
 @app.route('/api/visualization', methods=['GET'])
 def visualization_data():
-    return jsonify(get_visualization_bundle())
+    return jsonify(get_visualization_data())
 
 
 # -----------------------

@@ -92,21 +92,15 @@ def get_model_performance():
 # -----------------------
 # VISUALIZATION 
 # -----------------------
-def get_visualization_data():
-    return {
-        "dataset_summary": get_dataset_summary(),
-        "class_distribution_150": get_class_distribution(150),
-        "class_distribution_250": get_class_distribution(250),
-        "model_performance": get_model_performance()
-    }
 
-def get_visualization_bundle():
+def get_visualization_data():
     X, y = get_X_y_from_dataset()
 
     return {
         "dataset_summary": dataset_summary(X, y),
         "class_distribution_150": class_distribution(y, 150),
-        "class_distribution_250": class_distribution(y, 250)
+        "class_distribution_250": class_distribution(y, 250),
+        "model_performance": get_model_performance()  # model külön jön
     }
 # -----------------------
 # PREDICTION
