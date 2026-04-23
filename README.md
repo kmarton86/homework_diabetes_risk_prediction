@@ -1,6 +1,7 @@
 -------------------------
 Projekt structure:
 
+<code>
 homework_diabetes_risk_prediction/
 │
 ├── app.py
@@ -25,7 +26,7 @@ homework_diabetes_risk_prediction/
 ├── utilities
     ├── diabetes_dataset.py
 
-
+</code>
 Frontend (HTML/JS)
         ↓
 Flask API (app.py)
