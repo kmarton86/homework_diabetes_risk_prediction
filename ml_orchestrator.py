@@ -10,18 +10,8 @@ from ml.analysis import dataset_summary, class_distribution
 
 
 # -----------------------
-# CONFIG DATAS
-# -----------------------
-
-# DB_PATH = "data/diabetes.db"
-# THRESHOLD_150 = 150
-# THRESHOLD_250 = 250
-
-# CURRENT_THRESHOLD = THRESHOLD_150
-
-# -----------------------
 # LOAD DATA
-# -----------------------
+
 """
 X = bemeneti jellemzők (features): age, bmi, bp, stb.
 y = eredmény (target) -> drop oka, hogy ezt a ML-nek kell megtanulnia, nem adhatjuk át
@@ -39,7 +29,7 @@ def get_X_y_from_dataset():
 
 # -----------------------
 # TRAIN MODELS - for both scenarios
-# -----------------------
+
 MODELS = None
 
 def train_all_models():
@@ -73,7 +63,6 @@ def init_models():
 
 # -----------------------
 # ML ANALYSIS
-# -----------------------
 
 # DATASET SUMMARY
 def get_dataset_summary():
@@ -89,7 +78,7 @@ def get_class_distribution(threshold):
 
 # -----------------------
 # MODEL PERFORMANCE 
-# -----------------------
+
 def get_model_performance():
     global MODELS
 
@@ -103,7 +92,6 @@ def get_model_performance():
 
 # -----------------------
 # VISUALIZATION 
-# -----------------------
 
 def get_visualization_data():
     X, y = get_X_y_from_dataset()
@@ -116,7 +104,7 @@ def get_visualization_data():
     }
 # -----------------------
 # PREDICTION
-# -----------------------
+
 def run_prediction(patient_df, threshold):
     global MODELS
 
@@ -130,18 +118,18 @@ def run_prediction(patient_df, threshold):
 
 # -----------------------
 # TESTING
-# -----------------------
+
 if __name__ == "__main__":
 
     init_models()  
 
-    print("\nDATASET SUMMARY:")
+    print("dataset summary:\n")
     print(get_dataset_summary())
 
-    print("\nCLASS DISTRIBUTION (config.CURRENT_THRESHOLD):")
+    print("class distribution (config.CURRENT_THRESHOLD):\n")
     print(get_class_distribution(config.CURRENT_THRESHOLD))
 
-    print("\nMODEL PERFORMANCE:")
+    print("model performamnce:\n")
     print(get_model_performance())
 
     new_patient = {
@@ -159,23 +147,14 @@ if __name__ == "__main__":
 
     patient_df = pd.DataFrame([new_patient])
 
-    print(f"\nPREDICTION (threshold = {config.CURRENT_THRESHOLD}):")
+    print(f"\n prediction (threshold = {config.CURRENT_THRESHOLD}):")
     print(run_prediction(patient_df, config.CURRENT_THRESHOLD))
 
-    # -----------------------
-    # GET VISUALIZATION BUNDLE
-    # -----------------------
+    # visualization data test
     viz_data = get_visualization_data()
 
-    # -----------------------
-    # PRINT RAW
-    # -----------------------
-    print("\nRAW VISUALIZATION DATA:\n")
+    print("\n vizualization data:\n")
     print(viz_data)
 
-    # -----------------------
-    # PRETTY JSON (frontend-ready check)
-    # -----------------------
-
-    print("\nPRETTY JSON:\n")
+    print("\n viz data - pretty json:\n")
     print(json.dumps(viz_data, indent=4))

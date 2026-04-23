@@ -6,11 +6,14 @@ from ml.dataset import load_data  # állítsd a pontos path-ra
 
 # DB_PATH = "diabetes.db"
 
+# -----------------------
+# Init Data Table
+
 def init_db(DB_PATH):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # 1. ALWAYS CREATE TABLE FIRST
+    # CREATE TABLE 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS diabetes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,11 +33,10 @@ def init_db(DB_PATH):
 
     conn.commit()
 
-    # 2. SAFE CHECK (after table guaranteed to exist)
+    # Check if table is empty, if empty -> load dataset
     cursor.execute("SELECT COUNT(*) FROM diabetes")
     count = cursor.fetchone()[0]
 
-    # 3. populate only if empty
     if count == 0:
         print("Loading dataset into DB...")
 
@@ -60,6 +62,9 @@ def init_db(DB_PATH):
         print("DB already initialized")
 
     conn.close()
+
+# -----------------------
+# Load all data from database
 
 def load_from_db(DB_PATH):
     conn = sqlite3.connect(DB_PATH)

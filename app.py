@@ -15,23 +15,10 @@ from ml_orchestrator import (
 
 app = Flask(__name__)
 
-# -----------------------
-#  App config
-# -----------------------
-
-# # Database
-# DB_PATH = "data/diabetes.db"
-
-# # Model target thresholds
-# THRESHOLD_150 = 150
-# THRESHOLD_250 = 250
-
-# CURRENT_THRESHOLD = THRESHOLD_150
-
 
 # -----------------------
 # FRONTEND ENTRY
-# -----------------------
+
 @app.route('/')
 def index():
     return render_template(
@@ -39,18 +26,16 @@ def index():
         current_threshold=config.CURRENT_THRESHOLD
     )
 
-
 # -----------------------
 # 1. DATASET SUMMARY API
-# -----------------------
+
 @app.route('/api/dataset', methods=['GET'])
 def dataset_summary():
     return jsonify(get_dataset_summary())
 
-
 # -----------------------
 # 2. VISUALIZATION DATA API
-# -----------------------
+
 @app.route('/api/visualization', methods=['GET'])
 def visualization_data():
     return jsonify(get_visualization_data())
@@ -58,7 +43,7 @@ def visualization_data():
 
 # -----------------------
 # 3. PREDICTION API
-# -----------------------
+
 @app.route('/api/predict', methods=['POST'])
 def predict():
 
