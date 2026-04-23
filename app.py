@@ -7,7 +7,6 @@ from db import init_db
 from ml_orchestrator import (
     init_models,
     get_dataset_summary,
-    get_class_distribution,
     run_prediction,
     get_visualization_data
 )
@@ -17,7 +16,7 @@ app = Flask(__name__)
 
 
 # -----------------------
-# FRONTEND ENTRY
+# Frontend  - Default
 
 @app.route('/')
 def index():
@@ -27,14 +26,14 @@ def index():
     )
 
 # -----------------------
-# 1. DATASET SUMMARY API
+# 1. Dataset Summary
 
 @app.route('/api/dataset', methods=['GET'])
 def dataset_summary():
     return jsonify(get_dataset_summary())
 
 # -----------------------
-# 2. VISUALIZATION DATA API
+# 2. Data Vizaulization
 
 @app.route('/api/visualization', methods=['GET'])
 def visualization_data():
@@ -42,7 +41,7 @@ def visualization_data():
 
 
 # -----------------------
-# 3. PREDICTION API
+# 3. Patient input - Prediction
 
 @app.route('/api/predict', methods=['POST'])
 def predict():

@@ -65,16 +65,17 @@ def init_models():
 # ML ANALYSIS
 
 # DATASET SUMMARY
-def get_dataset_summary():
-    X, y = get_X_y_from_dataset()
+def get_dataset_summary(X=None, y=None):
+    if X is None or y is None:
+        X, y = get_X_y_from_dataset()
     return dataset_summary(X, y)
 
 # CLASS DISTRIBUTION
-def get_class_distribution(threshold):
+def get_class_distribution(threshold, y=None):
     # only y is needed for class_distribution
-    _, y = get_X_y_from_dataset()
+    if y is None:
+        _, y = get_X_y_from_dataset()
     return class_distribution(y, threshold)
-
 
 # -----------------------
 # MODEL PERFORMANCE 
@@ -97,10 +98,10 @@ def get_visualization_data():
     X, y = get_X_y_from_dataset()
 
     return {
-        "dataset_summary": dataset_summary(X, y),
-        "class_distribution_150": class_distribution(y, 150),
-        "class_distribution_250": class_distribution(y, 250),
-        "model_performance": get_model_performance()  # model külön jön
+        "dataset_summary": get_dataset_summary(X, y),
+        "class_distribution_150": get_class_distribution(150, y),
+        "class_distribution_250": get_class_distribution(250, y),
+        "model_performance": get_model_performance()
     }
 # -----------------------
 # PREDICTION
@@ -126,9 +127,11 @@ if __name__ == "__main__":
     print("dataset summary:\n")
     print(get_dataset_summary())
 
+    print('-----/n')
     print("class distribution (config.CURRENT_THRESHOLD):\n")
-    print(get_class_distribution(config.CURRENT_THRESHOLD))
+    print(f'get_class_distribution {config.CURRENT_THRESHOLD}')
 
+    print('-----/n')
     print("model performamnce:\n")
     print(get_model_performance())
 
@@ -147,14 +150,17 @@ if __name__ == "__main__":
 
     patient_df = pd.DataFrame([new_patient])
 
+    print('-----/n')
     print(f"\n prediction (threshold = {config.CURRENT_THRESHOLD}):")
     print(run_prediction(patient_df, config.CURRENT_THRESHOLD))
 
     # visualization data test
     viz_data = get_visualization_data()
 
+    print('-----/n')
     print("\n vizualization data:\n")
     print(viz_data)
 
+    print('-----/n')
     print("\n viz data - pretty json:\n")
     print(json.dumps(viz_data, indent=4))
