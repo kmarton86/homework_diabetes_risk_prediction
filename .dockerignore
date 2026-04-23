@@ -4,3 +4,9 @@ __pycache__/
 venv/
 .env
 .git/
+
+# Utilities folder 
+utilities/
+
+# HowToRun file
+HowToRun.txt
