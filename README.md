@@ -26,7 +26,7 @@ homework_diabetes_risk_prediction/
 ├── utilities
     ├── diabetes_dataset.py
 
-</code>
+
 Frontend (HTML/JS)
         ↓
 Flask API (app.py)
@@ -38,6 +38,7 @@ SQLite DB
 sklearn dataset
 
 1 container = full stack
+</code>
 
 -------------------------
 How to run:
